@@ -1,0 +1,642 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  password           String
+  firstName          String
+  lastName           String
+  role               UserRole  @default(USER)
+  status             UserStatus @default(ACTIVE)
+  profileImage       String?
+  bio                String?
+  phone              String?
+  location           String?
+  resetPasswordToken String?
+  resetPasswordExpire DateTime?
+  verificationToken  String?
+  isVerified         Boolean   @default(false)
+  lastLogin          DateTime?
+  googleId           String?
+  facebookId         String?
+  appleId            String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  isDeleted          Boolean   @default(false)
+  deletedAt          DateTime?
+
+  // Relations
+  enrollments        UserCourseEnrollment[]
+  userProgresses     UserProgress[]
+  posts              Post[]
+  comments           Comment[]
+  services           Service[]
+  serviceOrders      ServiceOrder[]
+  instructorCourses  Course[]   @relation("CourseInstructors")
+  payments           Payment[]
+  certificates       Certificate[]
+  quizAttempts       QuizAttempt[]
+  blockedUsers       BlockedUser[] @relation("BlockingUser")
+  blockedByUsers     BlockedUser[] @relation("BlockedUser")
+  videoComments      VideoComment[]
+  notifications      Notification[]
+  commentLike        CommentLike[]
+  postLike           PostLike[]
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+// Course Management Models
+model Course {
+  id               String    @id @default(uuid())
+  title            String
+  description      String
+  thumbnail        String?
+  isPublished      Boolean   @default(false)
+  publishedAt      DateTime?
+  tags             String[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+
+  // Relations
+  modules          Module[]
+  instructors      User[]    @relation("CourseInstructors")
+  enrollments      UserCourseEnrollment[]
+  userProgresses   UserProgress[]
+  certificates     Certificate[]
+}
+
+model Module {
+  id                 String      @id @default(uuid())
+  title              String
+  description        String?
+  durationInDays     Int
+  status             ModuleStatus @default(DRAFT)
+  order              Int
+  isStandaloneCourse Boolean     @default(false)
+  price              Decimal?    @db.Decimal(10, 2)
+  courseId           String      
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  isDeleted          Boolean     @default(false)
+  deletedAt          DateTime?
+
+  // Relations
+  course             Course      @relation(fields: [courseId], references: [id])
+  contents           Content[]
+  quizzes            Quiz[]
+  moduleProgresses   ModuleProgress[]
+  certificates       Certificate[]
+}
+
+enum ModuleStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model Content {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  type        ContentType
+  fileUrl     String
+  fileKey     String
+  fileSize    Int?
+  duration    Int?        // For videos, in seconds
+  pages       Int?        // For PDFs
+  order       Int
+  moduleId    String
+  metadata    Json?      // Flexible field for content-specific metadata
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  isDeleted   Boolean    @default(false)
+  deletedAt   DateTime?
+
+  // Relations
+  module      Module     @relation(fields: [moduleId], references: [id])
+  contentProgresses ContentProgress[]
+  videoComments VideoComment[]
+}
+
+enum ContentType {
+  VIDEO
+  PDF
+  WORKSHEET
+  QUIZ
+  CERTIFICATE
+}
+
+model Quiz {
+  id           String      @id @default(uuid())
+  title        String
+  description  String?
+  passingScore Int         // Percentage needed to pass
+  timeLimit    Int?        // In minutes
+  moduleId     String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  isDeleted    Boolean     @default(false)
+  deletedAt    DateTime?
+
+  // Relations
+  module       Module      @relation(fields: [moduleId], references: [id])
+  questions    QuizQuestion[]
+  attempts     QuizAttempt[]
+}
+
+model QuizQuestion {
+  id                String   @id @default(uuid())
+  question          String
+  options           String[]
+  correctOptionIndex Int
+  explanation       String?
+  points            Int
+  quizId            String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  quiz              Quiz     @relation(fields: [quizId], references: [id])
+  answers           QuizAnswer[]
+}
+
+model QuizAttempt {
+  id           String     @id @default(uuid())
+  userId       String
+  quizId       String
+  score        Int
+  passed       Boolean
+  attemptedAt  DateTime   @default(now())
+  
+  // Relations
+  user         User       @relation(fields: [userId], references: [id])
+  quiz         Quiz       @relation(fields: [quizId], references: [id])
+  answers      QuizAnswer[]
+}
+
+model QuizAnswer {
+  id                  String      @id @default(uuid())
+  quizAttemptId       String
+  questionId          String
+  selectedOptionIndex Int
+  isCorrect           Boolean
+  
+  // Relations
+  quizAttempt         QuizAttempt @relation(fields: [quizAttemptId], references: [id])
+  question            QuizQuestion @relation(fields: [questionId], references: [id])
+  
+  @@unique([quizAttemptId, questionId])
+}
+
+// Enrollment and Progress Models
+model UserCourseEnrollment {
+  id               String         @id @default(uuid())
+  userId           String
+  courseId         String
+  enrollmentDate   DateTime       @default(now())
+  expiryDate       DateTime
+  isActive         Boolean        @default(true)
+  paymentPlan      PaymentPlan
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  // Relations
+  user             User           @relation(fields: [userId], references: [id])
+  course           Course         @relation(fields: [courseId], references: [id])
+  payments         Payment[]
+
+  @@unique([userId, courseId])
+}
+
+enum PaymentPlan {
+  THREE_MONTH
+  SIX_MONTH
+  ONE_YEAR
+  SINGLE_MODULE
+}
+
+model Payment {
+  id                String         @id @default(uuid())
+  userId            String
+  enrollmentId      String
+  amount            Decimal        @db.Decimal(10, 2)
+  currency          String         @default("USD")
+  status            PaymentStatus
+  paymentMethod     String
+  transactionId     String?
+  paymentDate       DateTime
+  nextPaymentDate   DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  user              User           @relation(fields: [userId], references: [id])
+  enrollment        UserCourseEnrollment @relation(fields: [enrollmentId], references: [id])
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model UserProgress {
+  id               String           @id @default(uuid())
+  userId           String
+  courseId         String
+  overallProgress  Int              @default(0) // Percentage of course completed
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relations
+  user             User             @relation(fields: [userId], references: [id])
+  course           Course           @relation(fields: [courseId], references: [id])
+  moduleProgresses ModuleProgress[]
+
+  @@unique([userId, courseId])
+}
+
+model ModuleProgress {
+  id              String           @id @default(uuid())
+  userProgressId  String
+  moduleId        String
+  completed       Boolean          @default(false)
+  completedAt     DateTime?
+  unlockedAt      DateTime         @default(now())
+  certificateIssued Boolean        @default(false)
+  certificateIssuedAt DateTime?
+
+  // Relations
+  userProgress    UserProgress     @relation(fields: [userProgressId], references: [id])
+  module          Module           @relation(fields: [moduleId], references: [id])
+  contentProgresses ContentProgress[]
+
+  @@unique([userProgressId, moduleId])
+}
+
+model ContentProgress {
+  id                String         @id @default(uuid())
+  moduleProgressId  String
+  contentId         String
+  completed         Boolean        @default(false)
+  progress          Int            @default(0) // Percentage of completion
+  lastAccessed      DateTime?
+
+  // Relations
+  moduleProgress    ModuleProgress @relation(fields: [moduleProgressId], references: [id])
+  content           Content        @relation(fields: [contentId], references: [id])
+
+  @@unique([moduleProgressId, contentId])
+}
+
+model Certificate {
+  id                String        @id @default(uuid())
+  userId            String
+  courseId          String
+  moduleId          String?       // Optional, if certificate is for a specific module
+  title             String
+  issuedAt          DateTime
+  certificateUrl    String
+  verificationCode  String        @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relations
+  user              User          @relation(fields: [userId], references: [id])
+  course            Course        @relation(fields: [courseId], references: [id])
+  module            Module?       @relation(fields: [moduleId], references: [id])
+}
+
+// Community Models
+model Tag {
+  id            String     @id @default(uuid())
+  name          String     @unique
+  slug          String     @unique
+  description   String?
+  isSuper       Boolean    @default(false) // Whether it's a super tag (main category)
+  parentTagId   String?
+  order         Int
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  isDeleted     Boolean    @default(false)
+  deletedAt     DateTime?
+
+  // Relations
+  parentTag     Tag?       @relation("TagHierarchy", fields: [parentTagId], references: [id])
+  childTags     Tag[]      @relation("TagHierarchy")
+  posts         PostTag[]
+}
+
+model Post {
+  id             String          @id @default(uuid())
+  userId         String
+  title          String
+  content        String
+  isPinned       Boolean         @default(false)
+  views          Int             @default(0)
+  isReported     Boolean         @default(false)
+  reportCount    Int             @default(0)
+  reportReasons  String[]
+  isReviewed     Boolean         @default(false)
+  isApproved     Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  isDeleted      Boolean         @default(false)
+  deletedAt      DateTime?
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id])
+  tags           PostTag[]
+  attachments    PostAttachment[]
+  comments       Comment[]
+  likes          PostLike[]
+}
+
+model PostTag {
+  postId     String
+  tagId      String
+
+  // Relations
+  post       Post   @relation(fields: [postId], references: [id])
+  tag        Tag    @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+}
+
+model PostAttachment {
+  id          String   @id @default(uuid())
+  postId      String
+  type        String   // 'image', 'video', 'link'
+  url         String
+  key         String?  // S3 key if applicable
+  previewUrl  String?  // Thumbnail for videos
+  createdAt   DateTime @default(now())
+
+  // Relations
+  post        Post     @relation(fields: [postId], references: [id])
+}
+
+model Comment {
+  id             String       @id @default(uuid())
+  userId         String
+  postId         String
+  parentCommentId String?
+  content        String
+  isReported     Boolean      @default(false)
+  reportCount    Int          @default(0)
+  reportReasons  String[]
+  isReviewed     Boolean      @default(false)
+  isApproved     Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  isDeleted      Boolean      @default(false)
+  deletedAt      DateTime?
+
+  // Relations
+  user           User         @relation(fields: [userId], references: [id])
+  post           Post         @relation(fields: [postId], references: [id])
+  parentComment  Comment?     @relation("CommentReplies", fields: [parentCommentId], references: [id])
+  replies        Comment[]    @relation("CommentReplies")
+  likes          CommentLike[]
+}
+
+model PostLike {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+
+  @@id([userId, postId])
+}
+
+model CommentLike {
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  comment   Comment  @relation(fields: [commentId], references: [id])
+
+  @@id([userId, commentId])
+}
+
+model VideoComment {
+  id             String       @id @default(uuid())
+  userId         String
+  contentId      String
+  timeInSeconds  Int
+  comment        String
+  isReported     Boolean      @default(false)
+  reportCount    Int          @default(0)
+  reportReasons  String[]
+  isReviewed     Boolean      @default(false)
+  isApproved     Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  user           User         @relation(fields: [userId], references: [id])
+  content        Content      @relation(fields: [contentId], references: [id])
+}
+
+model BlockedUser {
+  blockingUserId String
+  blockedUserId  String
+  createdAt      DateTime @default(now())
+
+  // Relations
+  blockingUser   User     @relation("BlockingUser", fields: [blockingUserId], references: [id])
+  blockedUser    User     @relation("BlockedUser", fields: [blockedUserId], references: [id])
+
+  @@id([blockingUserId, blockedUserId])
+}
+
+// Marketplace Models
+model ServiceCategory {
+  id              String            @id @default(uuid())
+  name            String
+  slug            String            @unique
+  description     String?
+  icon            String?
+  parentCategoryId String?
+  order           Int
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  isDeleted       Boolean           @default(false)
+  deletedAt       DateTime?
+
+  // Relations
+  parentCategory  ServiceCategory?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
+  childCategories ServiceCategory[] @relation("CategoryHierarchy")
+  services        Service[]
+}
+
+model Service {
+  id              String            @id @default(uuid())
+  userId          String
+  categoryId      String
+  title           String
+  description     String
+  price           Decimal           @db.Decimal(10, 2)
+  isVerified      Boolean           @default(false)
+  isActive        Boolean           @default(true)
+  rating          Decimal?          @db.Decimal(3, 2)
+  reviewCount     Int               @default(0)
+  location        String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  isDeleted       Boolean           @default(false)
+  deletedAt       DateTime?
+
+  // Relations
+  user            User              @relation(fields: [userId], references: [id])
+  category        ServiceCategory   @relation(fields: [categoryId], references: [id])
+  portfolioItems  ServicePortfolioItem[]
+  orders          ServiceOrder[]
+  reviews         ServiceReview[]
+}
+
+model ServicePortfolioItem {
+  id          String    @id @default(uuid())
+  serviceId   String
+  title       String
+  description String?
+  imageUrl    String
+  imageKey    String?   // S3 key
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  service     Service   @relation(fields: [serviceId], references: [id])
+}
+
+model ServiceOrder {
+  id                String             @id @default(uuid())
+  serviceId         String
+  buyerId           String
+  status            ServiceOrderStatus @default(PENDING)
+  amount            Decimal            @db.Decimal(10, 2)
+  description       String?
+  deliveryDate      DateTime?
+  completedDate     DateTime?
+  hasDispute        Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  // Relations
+  service           Service            @relation(fields: [serviceId], references: [id])
+  buyer             User               @relation(fields: [buyerId], references: [id])
+  review            ServiceReview?
+  messages          ServiceMessage[]
+  dispute           ServiceDispute?
+}
+
+enum ServiceOrderStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+model ServiceMessage {
+  id            String    @id @default(uuid())
+  serviceOrderId String
+  senderId      String
+  content       String
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  serviceOrder  ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+}
+
+model ServiceReview {
+  id            String    @id @default(uuid())
+  serviceId     String
+  serviceOrderId String    @unique
+  userId        String
+  rating        Int       // 1-5
+  content       String
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  service       Service   @relation(fields: [serviceId], references: [id])
+  serviceOrder  ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+}
+
+model ServiceDispute {
+  id              String    @id @default(uuid())
+  serviceOrderId  String    @unique
+  reason          String
+  description     String
+  status          DisputeStatus @default(OPEN)
+  resolvedAt      DateTime?
+  resolution      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  serviceOrder    ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CANCELLED
+}
+
+// Notification System
+model Notification {
+  id            String          @id @default(uuid())
+  userId        String
+  type          NotificationType
+  title         String
+  message       String
+  isRead        Boolean         @default(false)
+  linkUrl       String?
+  createdAt     DateTime        @default(now())
+
+  // Relations
+  user          User            @relation(fields: [userId], references: [id])
+}
+
+enum NotificationType {
+  CONTENT_UNLOCK
+  PAYMENT_REMINDER
+  PAYMENT_CONFIRMATION
+  SERVICE_ORDER
+  COMMENT
+  ADMIN_ANNOUNCEMENT
+  CERTIFICATE_ISSUED
+}
