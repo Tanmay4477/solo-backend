@@ -8,7 +8,8 @@ const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '8000', 10),
   apiVersion: process.env.API_VERSION || 'v1',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  corsOrigin1: process.env.CORS_ORIGIN_ADMIN || 'http://localhost:3000',
+  corsOrigin2: process.env.CORS_ORIGIN_USER || 'http://localhost:8081',
   
   // Database configuration
   database: {
@@ -21,10 +22,8 @@ const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'default_refresh_secret_key',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
-    accessExpirationMinutes: process.env.ACCESS_EXPIRATION_MINUTES || '5',
-    refreshExpirationDays: process.env.REFRESH_EXPIRATION_MINUTES || '15',
-    resetPasswordExpirationMinutes: process.env.RESET_PASSWORD_EXPIRATION_MINUTES || '5',
-    verifyEmailExpirationMinutes: process.env.VERIFY_EMAIL_EXPIRATION_MINUTES || '5'
+    resetPasswordExpirationMinutes: process.env.RESET_PASSWORD_EXPIRATION_MINUTES || '5m',
+    verifyEmailExpirationMinutes: process.env.VERIFY_EMAIL_EXPIRATION_MINUTES || '5m'
   },
   
   // AWS configuration

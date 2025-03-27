@@ -51,7 +51,7 @@ export const authenticate = async (
     req.user = user;
     
     next();
-  } catch (error) {
+  } catch (error: any) {
     if (error.name === 'JsonWebTokenError') {
       next(new ApiError('Invalid token', 401));
     } else if (error.name === 'TokenExpiredError') {

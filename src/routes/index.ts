@@ -1,8 +1,8 @@
-// import { Router } from 'express';
+import { Router } from 'express';
 // import authRoutes from './auth.routes';
 // import userRoutes from './user.routes';
 // import courseRoutes from './course.routes';
-// import moduleRoutes from './module.routes';
+import moduleRoutes from './module.routes';
 // import contentRoutes from './content.routes';
 // import quizRoutes from './quiz.routes';
 // import paymentRoutes from './payment.routes';
@@ -19,13 +19,13 @@
 // import uploadRoutes from './upload.routes';
 // import adminRoutes from './admin.routes';
 
-// const router = Router();
+const router = Router();
 
 // // API Routes
 // router.use('/auth', authRoutes);
 // router.use('/users', userRoutes);
 // router.use('/courses', courseRoutes);
-// router.use('/modules', moduleRoutes);
+router.use('/modules', moduleRoutes);
 // router.use('/contents', contentRoutes);
 // router.use('/quizzes', quizRoutes);
 // router.use('/payments', paymentRoutes);
