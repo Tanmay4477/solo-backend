@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { ModuleStatus } from '@prisma/client';
 
 /**
  * Create module schema
@@ -13,7 +12,6 @@ export const createModuleSchema = z.object({
     order: z.number().int().nonnegative(),
     isStandaloneCourse: z.boolean().optional().default(false),
     price: z.number().optional().nullable(),
-    status: z.nativeEnum(ModuleStatus).optional().default(ModuleStatus.DRAFT),
   }),
 });
 
@@ -36,7 +34,6 @@ export const updateModuleSchema = z.object({
     order: z.number().int().nonnegative().optional(),
     isStandaloneCourse: z.boolean().optional(),
     price: z.number().optional().nullable(),
-    status: z.nativeEnum(ModuleStatus).optional(),
   }),
 });
 
@@ -60,23 +57,6 @@ export const moduleIdParamsSchema = z.object({
  */
 export type ModuleIdParams = z.infer<typeof moduleIdParamsSchema>['params'];
 
-/**
- * Update module status schema
- */
-export const updateModuleStatusSchema = z.object({
-  params: z.object({
-    id: z.string().uuid(),
-  }),
-  body: z.object({
-    status: z.nativeEnum(ModuleStatus),
-  }),
-});
-
-/**
- * Update module status request type
- */
-export type UpdateModuleStatusParams = z.infer<typeof updateModuleStatusSchema>['params'];
-export type UpdateModuleStatusRequest = z.infer<typeof updateModuleStatusSchema>['body'];
 
 /**
  * Toggle standalone course schema
@@ -121,7 +101,6 @@ export type UpdateModuleOrderRequest = z.infer<typeof updateModuleOrderSchema>['
 export const getModulesQuerySchema = z.object({
   query: z.object({
     courseId: z.string().uuid().optional(),
-    status: z.nativeEnum(ModuleStatus).optional(),
     isStandaloneCourse: z.string().optional().transform(val => val === 'true'),
     page: z.string().optional().transform(val => val ? parseInt(val, 10) : 1),
     limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 10),
@@ -144,7 +123,6 @@ export interface ModuleResponse {
   title: string;
   description: string | null;
   durationInDays: number;
-  status: ModuleStatus;
   order: number;
   isStandaloneCourse: boolean;
   price: number | null;

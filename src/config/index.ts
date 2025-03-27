@@ -8,8 +8,8 @@ const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '8000', 10),
   apiVersion: process.env.API_VERSION || 'v1',
-  corsOrigin1: process.env.CORS_ORIGIN_ADMIN || 'http://localhost:3000',
-  corsOrigin2: process.env.CORS_ORIGIN_USER || 'http://localhost:8081',
+  corsOriginAdmin: process.env.CORS_ORIGIN_ADMIN || 'http://localhost:3000',
+  corsOriginUser: process.env.CORS_ORIGIN_USER || 'http://localhost:8081',
   
   // Database configuration
   database: {

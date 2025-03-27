@@ -94,7 +94,6 @@ model Module {
   title              String
   description        String?
   durationInDays     Int
-  status             ModuleStatus @default(DRAFT)
   order              Int
   isStandaloneCourse Boolean     @default(false)
   price              Decimal?    @db.Decimal(10, 2)
@@ -112,11 +111,6 @@ model Module {
   certificates       Certificate[]
 }
 
-enum ModuleStatus {
-  DRAFT
-  ACTIVE
-  ARCHIVED
-}
 
 model Content {
   id          String      @id @default(uuid())

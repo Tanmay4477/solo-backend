@@ -42,4 +42,4 @@ router.use('/modules', moduleRoutes);
 // router.use('/uploads', uploadRoutes);
 // router.use('/admin', adminRoutes);
 
-// export default router;
+export default router;
