@@ -7,9 +7,9 @@ export const createModuleSchema = z.object({
   body: z.object({
     title: z.string().min(3, { message: 'Title must be at least 3 characters long' }).max(255),
     description: z.string().optional(),
-    courseId: z.string().uuid(),
     durationInDays: z.number().int().positive(),
-    order: z.number().int().nonnegative(),
+    thumbnail: z.string(),
+    tags: z.string(),
     isStandaloneCourse: z.boolean().optional().default(false),
     price: z.number().optional().nullable(),
   }),
