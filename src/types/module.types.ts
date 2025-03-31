@@ -123,44 +123,10 @@ export interface ModuleResponse {
   title: string;
   description: string | null;
   durationInDays: number;
-  order: number;
+  thumbnail: string;
   isStandaloneCourse: boolean;
   price: number | null;
-  courseId: string;
   createdAt: Date;
   updatedAt: Date;
-  course?: {
-    id: string;
-    title: string;
-  };
-  _count?: {
-    contents: number;
-    quizzes: number;
-  };
 }
 
-/**
- * Detailed module response object
- */
-export interface DetailedModuleResponse extends ModuleResponse {
-  contents: {
-    id: string;
-    title: string;
-    description: string | null;
-    type: string;
-    order: number;
-    fileUrl: string;
-    duration: number | null;
-    pages: number | null;
-  }[];
-  quizzes: {
-    id: string;
-    title: string;
-    description: string | null;
-    passingScore: number;
-    timeLimit: number | null;
-    _count: {
-      questions: number;
-    };
-  }[];
-}

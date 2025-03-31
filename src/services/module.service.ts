@@ -180,40 +180,19 @@ export class ModuleService {
    */
   static async createModule(data: {
     title: string;
-    description?: string;
-    courseId: string;
+    description: string;
+    thumbnail: string;
     durationInDays: number;
-    order: number;
     isStandaloneCourse?: boolean;
+    tags: string;
     price?: number | null;
-    status?: ModuleStatus;
   }): Promise<ModuleResponse> {
-    // Check if course exists
-    const course = await prisma.course.findFirst({
-      where: {
-        id: data.courseId,
-        isDeleted: false
-      }
-    });
-    
-    if (!course) {
-      throw new ApiError('Course not found', 404);
-    }
-    
+
     // Create module
     const module = await prisma.module.create({
       data: {
         ...data,
-        status: data.status || ModuleStatus.DRAFT
       },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true
-          }
-        }
-      }
     });
     
     return {
@@ -221,14 +200,11 @@ export class ModuleService {
       title: module.title,
       description: module.description,
       durationInDays: module.durationInDays,
-      status: module.status,
-      order: module.order,
+      thumbnail: module.thumbnail,
       isStandaloneCourse: module.isStandaloneCourse,
       price: module.price ? parseFloat(module.price.toString()) : null,
-      courseId: module.courseId,
       createdAt: module.createdAt,
       updatedAt: module.updatedAt,
-      course: module.course
     };
   }
   
